@@ -22,6 +22,7 @@ def login():
         a = username
         normaluser()
     elif rows[0][1] == username and rows[0][2] == userpassword and rows[0][3] == 2:
+        a = username
         adminuser()
     else:
         print("Error in login ...")
@@ -30,20 +31,24 @@ def normaluser():
     while True:
         print("\n1.Search by Author")
         print("2.Checkout a Book")
-        print("3.View Past Transactions")
-        print("4.Exit\n")
+        print("3.Return a book")
+        print("4.View checked out books")
+        print("5.View all transactions")
+        print("6.Log out\n")
         ch = int(input("Enter your choice:"))
         if ch == 1:
             searchbyauth()
         if ch == 2:
             checkout()
         if ch == 3:
+            checkin()
+        if ch == 4: 
+            bookcheck()
+        if ch == 5:
+            allcheck()
+        if ch == 6:
             print("Good Bye")
             break
-        if ch == 4:
-            print("Good Bye")
-            break
-    print("normaluser")  
 
 def searchbyauth():
     authorname = input("\nEnter the author whose books you want to view: ")
@@ -52,7 +57,7 @@ def searchbyauth():
     cursor.execute(sql,values)
     rows = cursor.fetchall()
     for i in rows:
-        print("\nBook name =",i[0],"            Copies left =",i[3])
+        print("\nBook name =",i[0],"            Book Number =",i[1],"            Copies left =",i[3])
 
 def checkout():
     global a
@@ -64,11 +69,11 @@ def checkout():
     rows = cursor.fetchall()
     print("\nBook Name =",rows[0][0],"\nBook ISBN number:",rows[0][1],"\nBook Author:",rows[0][2])
     confirm = input("\nDo you want to checkout this book (yes or no): ")
-    if confirm == "yes" and rows[0][3] != "0":
-        print("\n Proccessing ....... \n")
+    if confirm == "yes" and rows[0][3] != 0:
+        print("\nProccessing ....... \n")
         today = date.today()
-        sql = "INSERT into history values(%s,%s,%s,%s)"
-        values = (booknum[0],a,today,None)
+        sql = "INSERT into history values(%s,%s,%s,%s,%s)"
+        values = (rows[0][0],booknum[0],a,today,None)
         cursor.execute(sql,values)
         mydb.commit()
         sql = "UPDATE book_id SET Copies = %s WHERE bookid = %s"
@@ -77,7 +82,76 @@ def checkout():
         mydb.commit()
         print("Book Checked out  \n")
     else:
-        print("\n ERROR TRY AGAIN LATER ....... \n")
+        print("\n###################################################")
+        print("ERROR TRY AGAIN LATER .......")
+        print("###################################################\n")
+
+def checkin():
+    global a
+    global today
+    booknum = input("Enter the ISBN number of the book: ")
+    booknum = (booknum,)
+    sql = "SELECT * FROM book_id where bookid = %s"
+    cursor.execute(sql,booknum)
+    rows = cursor.fetchall()
+    print("\nBook Name =",rows[0][0],"\nBook ISBN number:",rows[0][1],"\nBook Author:",rows[0][2])
+    confirm = input("\nDo you want to Checkin this book (yes or no): ")
+    if confirm == "yes":
+        print("\nProccessing ....... \n")
+        today = date.today()
+        sql = "UPDATE history Set check_in = %s Where bookid =%s"
+        values = (today,booknum[0])
+        cursor.execute(sql,values)
+        mydb.commit()
+        sql = "UPDATE book_id SET Copies = %s WHERE bookid = %s"
+        values = (str(int(rows[0][3]) + 1), booknum[0])
+        cursor.execute(sql, values)
+        mydb.commit()
+        print("Book Checked in  \n")
+    else:
+        print("\n###################################################")
+        print("ERROR TRY AGAIN LATER .......")
+        print("###################################################\n")
+
+def allcheck():
+    global a 
+    sql = "SELECT * FROM history where userid = %s"
+    cursor.execute(sql,(a,))
+    rows = cursor.fetchall()
+    for i in rows:
+        print("Book Name =",i[0],"      Book Number =",i[1],"      Checkout date =",i[3],"      Checkin Date =",i[4])
+
+def bookcheck():
+    global a 
+    sql = "SELECT * FROM history where userid = %s and check_in is NULL"
+    cursor.execute(sql,(a,))
+    rows = cursor.fetchall()
+    if len(rows) == 0:
+        print("No Books Checked Out")
+    else:
+        for i in rows:
+            print("Book Name =",i[0],"      Book Number =",i[1],"      Checkout date =",i[3],"      Checkin Date =",i[4])
+
+def adminuser():
+    while True:
+        print("\n1.Add a Book")
+        print("2.Add a User")
+        print("3. View checked out books")
+        print("4.View all transactions")
+        print("5.Log out\n")
+        ch = int(input("Enter your choice:"))
+        if ch == 1:
+            addbook()
+        if ch == 2:
+            checkout()
+        if ch == 3: 
+            bookcheck()
+        if ch == 4:
+            allcheck()
+        if ch == 5:
+            print("Good Bye")
+            break
+
 
 def userformer():
     username = input("Enter the name of the user: ")
@@ -116,16 +190,6 @@ def addbook():
    cursor.execute(sql, values)
    mydb.commit()
        
-
-
-def allcheck():
-    library_id = int(input("Please enter your 4 digit library number: "))
-
-
-
-def adminuser():
-    print("adminuser")  
-
 while True:
     a = ""
     print("###################################################")
